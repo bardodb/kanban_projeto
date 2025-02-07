@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsNumber, Min } from 'class-validator';
 
 export class MoveCardDto {
   @IsString()
@@ -10,4 +10,8 @@ export class MoveCardDto {
   @IsNotEmpty()
   @IsUUID()
   toColumnId: string;
+
+  @IsNumber()
+  @Min(0)
+  position: number;
 }

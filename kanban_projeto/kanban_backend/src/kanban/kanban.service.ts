@@ -186,7 +186,7 @@ export class KanbanService {
   }
 
   async moveCard(cardId: string, moveCardDto: MoveCardDto): Promise<void> {
-    const { fromColumnId, toColumnId } = moveCardDto;
+    const { fromColumnId, toColumnId, position } = moveCardDto;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -219,18 +219,22 @@ export class KanbanService {
         })
         .execute();
 
-      // Get the highest position in the target column
-      const lastCardInTarget = await queryRunner.manager.findOne(Card, {
-        where: { columnId: toColumnId },
-        order: { position: 'DESC' },
-      });
-
-      const newPosition = lastCardInTarget ? lastCardInTarget.position + 1 : 0;
+      // Update positions in target column to make space for the new card
+      await queryRunner.manager.createQueryBuilder()
+        .update(Card)
+        .set({
+          position: () => 'position + 1'
+        })
+        .where('columnId = :columnId AND position >= :position', {
+          columnId: toColumnId,
+          position,
+        })
+        .execute();
 
       // Update the card's column and position
       await queryRunner.manager.update(Card, cardId, {
         columnId: toColumnId,
-        position: newPosition,
+        position,
       });
 
       await queryRunner.commitTransaction();

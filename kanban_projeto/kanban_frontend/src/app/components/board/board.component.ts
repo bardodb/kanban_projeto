@@ -176,8 +176,9 @@ export class BoardComponent implements OnInit {
     } else {
       const cardId = event.item.data.id;
       const toColumnId = event.container.id;
+      const newPosition = event.currentIndex;
 
-      this.kanbanService.moveCard(cardId, toColumnId).subscribe({
+      this.kanbanService.moveCard(cardId, toColumnId, newPosition).subscribe({
         error: (error: Error) => {
           console.error('Error moving card:', error);
           // Revert the change in case of error

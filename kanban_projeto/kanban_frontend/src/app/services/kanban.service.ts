@@ -145,7 +145,7 @@ export class KanbanService {
       );
   }
 
-  moveCard(cardId: string, toColumnId: string): Observable<any> {
+  moveCard(cardId: string, toColumnId: string, position: number): Observable<any> {
     const currentBoard = this.boardSubject.value;
     const fromColumn = currentBoard.columns.find(col => 
       col.cards.some(card => card.id === cardId)
@@ -157,7 +157,8 @@ export class KanbanService {
 
     return this.http.put(`${this.apiUrl}/cards/${cardId}/move`, { 
       fromColumnId: fromColumn.id, 
-      toColumnId 
+      toColumnId,
+      position
     }).pipe(
       tap(() => {
         const movedCard = fromColumn.cards.find(card => card.id === cardId);
@@ -170,9 +171,15 @@ export class KanbanService {
               };
             }
             if (column.id === toColumnId) {
+              const updatedCards = [...column.cards];
+              updatedCards.splice(position, 0, { ...movedCard, columnId: toColumnId, position });
+              // Update positions of all cards after the insertion point
+              for (let i = position + 1; i < updatedCards.length; i++) {
+                updatedCards[i].position = i;
+              }
               return {
                 ...column,
-                cards: [...column.cards, { ...movedCard, columnId: toColumnId }]
+                cards: updatedCards
               };
             }
             return column;
