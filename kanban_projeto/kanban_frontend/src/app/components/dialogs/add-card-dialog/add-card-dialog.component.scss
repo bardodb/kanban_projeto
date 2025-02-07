@@ -1,0 +1,21 @@
+.full-width {
+  width: 100%;
+}
+
+mat-dialog-content {
+  min-height: 200px;
+  padding: 20px;
+
+  mat-form-field {
+    margin-bottom: 16px;
+  }
+
+  textarea {
+    min-height: 100px;
+  }
+}
+
+mat-dialog-actions {
+  padding: 16px;
+  margin-bottom: 0;
+}
