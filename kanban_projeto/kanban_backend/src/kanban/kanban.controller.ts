@@ -3,6 +3,7 @@ import { KanbanService } from './kanban.service';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { CreateCardDto } from './dto/create-card.dto';
 import { MoveCardDto } from './dto/move-card.dto';
+import { UpdateCardDto } from './dto/update-card.dto';
 import { Column } from './entities/column.entity';
 import { Card } from './entities/card.entity';
 
@@ -59,5 +60,13 @@ export class KanbanController {
   ) {
     await this.kanbanService.updateCardPosition(cardId, position);
     return { success: true };
+  }
+
+  @Put('cards/:cardId')
+  async updateCard(
+    @Param('cardId') cardId: string,
+    @Body() updateCardDto: UpdateCardDto,
+  ): Promise<Card> {
+    return this.kanbanService.updateCard(cardId, updateCardDto);
   }
 }

@@ -6,6 +6,7 @@ import { Card } from './entities/card.entity';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { CreateCardDto } from './dto/create-card.dto';
 import { MoveCardDto } from './dto/move-card.dto';
+import { UpdateCardDto } from './dto/update-card.dto';
 
 @Injectable()
 export class KanbanService {
@@ -286,6 +287,40 @@ export class KanbanService {
       });
 
       await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updateCard(cardId: string, updateCardDto: UpdateCardDto): Promise<Card> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const card = await queryRunner.manager.findOne(Card, {
+        where: { id: cardId },
+      });
+
+      if (!card) {
+        throw new NotFoundException(`Card with ID ${cardId} not found`);
+      }
+
+      await queryRunner.manager.update(Card, cardId, updateCardDto);
+      
+      const updatedCard = await queryRunner.manager.findOne(Card, {
+        where: { id: cardId },
+      });
+
+      if (!updatedCard) {
+        throw new NotFoundException(`Updated card with ID ${cardId} not found`);
+      }
+
+      await queryRunner.commitTransaction();
+      return updatedCard;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

@@ -200,4 +200,23 @@ export class KanbanService {
     return this.http.post<Card>(`${this.apiUrl}/columns/${columnId}/cards`, data)
       .pipe(catchError(this.handleError));
   }
+
+  updateCard(cardId: string, data: { title: string; description: string; color?: string }): Observable<Card> {
+    return this.http.put<Card>(`${this.apiUrl}/cards/${cardId}`, data)
+      .pipe(
+        tap(updatedCard => {
+          const currentBoard = this.boardSubject.value;
+          const updatedColumns = currentBoard.columns.map(column => ({
+            ...column,
+            cards: column.cards.map(card => 
+              card.id === cardId 
+                ? { ...card, ...updatedCard }
+                : card
+            )
+          }));
+          this.boardSubject.next({ ...currentBoard, columns: updatedColumns });
+        }),
+        catchError(this.handleError)
+      );
+  }
 }

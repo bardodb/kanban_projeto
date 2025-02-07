@@ -18,19 +18,32 @@ import { BoardComponent } from './components/board/board.component';
     BoardComponent
   ],
   template: `
-    <mat-toolbar color="primary">
-      <span>Kanban Board</span>
-    </mat-toolbar>
-    <app-board></app-board>
+    <div class="app-container">
+      <mat-toolbar>
+        <span class="title">Kanban Board</span>
+      </mat-toolbar>
+      <app-board></app-board>
+    </div>
   `,
   styles: [`
-    :host {
+    .app-container {
       display: block;
       height: 100vh;
+      background-color: #1D2125;
     }
     
     mat-toolbar {
-      margin-bottom: 1rem;
+      background-color: #1D2125;
+      color: #B6C2CF;
+      height: 64px;
+      padding: 0 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
     }
   `]
 })

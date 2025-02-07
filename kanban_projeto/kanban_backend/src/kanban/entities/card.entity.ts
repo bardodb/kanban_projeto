@@ -21,6 +21,9 @@ export class Card {
   @Column({ type: 'integer', default: 0 })
   position: number;
 
+  @Column({ nullable: true })
+  color: string;
+
   @ManyToOne(() => KanbanColumn, column => column.cards, {
     onDelete: 'CASCADE'
   })

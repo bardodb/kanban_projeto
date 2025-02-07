@@ -9,6 +9,7 @@ import { MatCardModule } from '@angular/material/card';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AddColumnDialogComponent } from '../dialogs/add-column-dialog/add-column-dialog.component';
 import { AddCardDialogComponent } from '../dialogs/add-card-dialog/add-card-dialog.component';
+import { EditCardDialogComponent } from '../dialogs/edit-card-dialog/edit-card-dialog.component';
 import { Column } from '../../interfaces/column.interface';
 import { Card } from '../../interfaces/card.interface';
 
@@ -129,6 +130,44 @@ export class BoardComponent implements OnInit {
         }
       );
     }
+  }
+
+  onEditCard(card: Card, event: Event): void {
+    event.stopPropagation();
+    const dialogRef = this.dialog.open(EditCardDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      data: { card },
+      autoFocus: true,
+      restoreFocus: true,
+      ariaLabel: 'Edit card',
+      role: 'dialog',
+      hasBackdrop: true,
+      closeOnNavigation: true,
+      disableClose: false,
+      ariaDescribedBy: 'edit-card-description'
+    });
+
+    dialogRef.afterClosed().subscribe((result?: { title: string; description: string; color?: string }) => {
+      if (result) {
+        this.kanbanService.updateCard(card.id, result).subscribe({
+          next: (updatedCard: Card) => {
+            const column = this.board.columns.find(col => 
+              col.cards.some(c => c.id === card.id)
+            );
+            if (column) {
+              const cardIndex = column.cards.findIndex(c => c.id === card.id);
+              if (cardIndex !== -1) {
+                column.cards[cardIndex] = { ...column.cards[cardIndex], ...updatedCard };
+              }
+            }
+          },
+          error: (error: Error) => {
+            console.error('Error updating card:', error);
+          }
+        });
+      }
+    });
   }
 
   onColumnDrop(event: CdkDragDrop<Column[]>): void {

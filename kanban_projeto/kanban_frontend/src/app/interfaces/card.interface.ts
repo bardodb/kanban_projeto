@@ -4,4 +4,5 @@ export interface Card {
   description: string;
   position: number;
   columnId: string;
+  color?: string;
 }
