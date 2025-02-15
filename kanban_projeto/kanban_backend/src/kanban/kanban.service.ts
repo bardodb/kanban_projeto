@@ -208,40 +208,72 @@ export class KanbanService {
 
       const oldPosition = card.position;
 
-      // Update positions in the source column
-      await queryRunner.manager.createQueryBuilder()
-        .update(Card)
-        .set({
-          position: () => 'position - 1'
-        })
-        .where('columnId = :columnId AND position > :position', {
-          columnId: fromColumnId,
-          position: oldPosition,
-        })
-        .execute();
+      if (fromColumnId === toColumnId) {
+        // Movendo na mesma coluna
+        if (oldPosition < position) {
+          // Movendo para baixo
+          await queryRunner.manager.createQueryBuilder()
+            .update(Card)
+            .set({
+              position: () => 'position - 1'
+            })
+            .where('columnId = :columnId AND position > :oldPosition AND position <= :newPosition', {
+              columnId: fromColumnId,
+              oldPosition,
+              newPosition: position,
+            })
+            .execute();
+        } else if (oldPosition > position) {
+          // Movendo para cima
+          await queryRunner.manager.createQueryBuilder()
+            .update(Card)
+            .set({
+              position: () => 'position + 1'
+            })
+            .where('columnId = :columnId AND position >= :newPosition AND position < :oldPosition', {
+              columnId: fromColumnId,
+              oldPosition,
+              newPosition: position,
+            })
+            .execute();
+        }
+      } else {
+        // Movendo para outra coluna
+        // Update positions in the source column
+        await queryRunner.manager.createQueryBuilder()
+          .update(Card)
+          .set({
+            position: () => 'position - 1'
+          })
+          .where('columnId = :columnId AND position > :position', {
+            columnId: fromColumnId,
+            position: oldPosition,
+          })
+          .execute();
 
-      // Update positions in target column to make space for the new card
-      await queryRunner.manager.createQueryBuilder()
-        .update(Card)
-        .set({
-          position: () => 'position + 1'
-        })
-        .where('columnId = :columnId AND position >= :position', {
-          columnId: toColumnId,
-          position,
-        })
-        .execute();
+        // Update positions in target column to make space for the new card
+        await queryRunner.manager.createQueryBuilder()
+          .update(Card)
+          .set({
+            position: () => 'position + 1'
+          })
+          .where('columnId = :columnId AND position >= :position', {
+            columnId: toColumnId,
+            position,
+          })
+          .execute();
+      }
 
-      // Update the card's column and position
+      // Update the moved card's position and column
       await queryRunner.manager.update(Card, cardId, {
         columnId: toColumnId,
-        position,
+        position: position,
       });
 
       await queryRunner.commitTransaction();
-    } catch (error) {
+    } catch (err) {
       await queryRunner.rollbackTransaction();
-      throw error;
+      throw err;
     } finally {
       await queryRunner.release();
     }

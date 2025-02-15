@@ -161,31 +161,8 @@ export class KanbanService {
       position
     }).pipe(
       tap(() => {
-        const movedCard = fromColumn.cards.find(card => card.id === cardId);
-        if (movedCard) {
-          const updatedColumns = currentBoard.columns.map(column => {
-            if (column.id === fromColumn.id) {
-              return {
-                ...column,
-                cards: column.cards.filter(card => card.id !== cardId)
-              };
-            }
-            if (column.id === toColumnId) {
-              const updatedCards = [...column.cards];
-              updatedCards.splice(position, 0, { ...movedCard, columnId: toColumnId, position });
-              // Update positions of all cards after the insertion point
-              for (let i = position + 1; i < updatedCards.length; i++) {
-                updatedCards[i].position = i;
-              }
-              return {
-                ...column,
-                cards: updatedCards
-              };
-            }
-            return column;
-          });
-          this.boardSubject.next({ ...currentBoard, columns: updatedColumns });
-        }
+        // Após mover o card, atualizar o board inteiro para garantir consistência
+        this.refreshBoard().subscribe();
       }),
       catchError(this.handleError)
     );

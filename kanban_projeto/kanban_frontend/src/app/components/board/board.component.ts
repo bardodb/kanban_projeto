@@ -195,32 +195,18 @@ export class BoardComponent implements OnInit {
   }
 
   onCardDrop(event: CdkDragDrop<Card[]>): void {
-    if (event.previousContainer === event.container) {
-      if (event.previousIndex === event.currentIndex) return;
-      
-      const cards = [...event.container.data];
-      moveItemInArray(cards, event.previousIndex, event.currentIndex);
-      
-      // Update card positions
-      cards.forEach((card, index) => {
-        card.position = index;
-      });
+    const cardId = event.item.data.id;
+    const toColumnId = event.container.id;
+    const newPosition = event.currentIndex;
 
-      const columnId = event.container.id;
-      const column = this.board.columns.find(col => col.id === columnId);
-      if (column) {
-        column.cards = cards;
-        this.board = { ...this.board };
-      }
-    } else {
-      const cardId = event.item.data.id;
-      const toColumnId = event.container.id;
-      const newPosition = event.currentIndex;
-
-      this.kanbanService.moveCard(cardId, toColumnId, newPosition).subscribe({
-        error: (error: Error) => {
-          console.error('Error moving card:', error);
-          // Revert the change in case of error
+    // Sempre usar moveCard, mesmo quando na mesma coluna
+    this.kanbanService.moveCard(cardId, toColumnId, newPosition).subscribe({
+      error: (error: Error) => {
+        console.error('Error moving card:', error);
+        // Revert the change in case of error
+        if (event.previousContainer === event.container) {
+          moveItemInArray(event.container.data, event.currentIndex, event.previousIndex);
+        } else {
           transferArrayItem(
             event.container.data,
             event.previousContainer.data,
@@ -228,8 +214,8 @@ export class BoardComponent implements OnInit {
             event.previousIndex
           );
         }
-      });
-    }
+      }
+    });
   }
 
   getConnectedLists(column: any): string[] {
