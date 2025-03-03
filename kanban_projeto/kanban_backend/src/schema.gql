@@ -51,14 +51,14 @@ input MoveCardInput {
 }
 
 type Mutation {
-  createColumn(input: CreateColumnInput!): Column!
-  deleteColumn(id: String!): Boolean!
-  updateColumnPositions(columns: [ColumnPositionInput!]!): Boolean!
-  updateColumn(id: String!, title: String!): Column!
   createCard(input: CreateCardInput!): Card!
-  deleteCard(id: String!): Boolean!
+  createColumn(input: CreateColumnInput!): Column!
+  deleteCard(cardId: String!): Boolean!
+  deleteColumn(columnId: String!): Boolean!
   moveCard(input: MoveCardInput!): Boolean!
   updateCard(input: UpdateCardInput!): Card!
+  updateColumn(id: String!, title: String!): Column!
+  updateColumnPositions(input: UpdateColumnPositionsInput!): Boolean!
 }
 
 type Query {

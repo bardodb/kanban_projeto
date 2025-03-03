@@ -62,7 +62,6 @@ export class BoardComponent implements OnInit {
       if (result) {
         this.kanbanService.createColumn(result.title).subscribe({
           next: (column: Column) => {
-            this.board.columns.push(column);
           },
           error: (error: Error) => {
             console.error('Error creating column:', error);
@@ -91,10 +90,6 @@ export class BoardComponent implements OnInit {
         
         this.kanbanService.createCard(columnId, cardData).subscribe({
           next: (card: Card) => {
-            const column = this.board.columns.find(col => col.id === columnId);
-            if (column) {
-              column.cards.push(card);
-            }
           },
           error: (error: Error) => {
             console.error('Error creating card:', error);

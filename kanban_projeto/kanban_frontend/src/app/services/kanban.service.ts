@@ -116,29 +116,40 @@ export class KanbanService {
   }
 
   private loadInitialData() {
+    console.log('Loading initial board data...');
     this.apollo.watchQuery<{ getBoard: Board }>({
       query: GET_BOARD,
       fetchPolicy: 'network-only'
     }).valueChanges.pipe(
       map(result => {
-        // Criar uma cópia profunda do resultado para evitar modificar objetos somente leitura
+        // Create a deep copy of the result to avoid modifying read-only objects
         const board = JSON.parse(JSON.stringify(result.data.getBoard));
         return board;
       }),
       tap((board: Board) => {
-        // Agora podemos ordenar com segurança as colunas e cartões
+        console.log('Board data received:', JSON.stringify(board));
+        
+        // Ensure board has columns
+        if (!board.columns) {
+          board.columns = [];
+        }
+        
+        // Sort columns by position
         const columnsCopy = [...board.columns];
         columnsCopy.sort((a: Column, b: Column) => a.position - b.position);
         
+        // Ensure each column has cards and sort them
         columnsCopy.forEach((column: Column) => {
-          if (column.cards) {
-            column.cards = [...column.cards].sort((a: Card, b: Card) => a.position - b.position);
-          } else {
+          if (!column.cards) {
             column.cards = [];
+          } else {
+            column.cards = [...column.cards].sort((a: Card, b: Card) => a.position - b.position);
           }
         });
         
+        // Update the board subject with the sorted data
         this.boardSubject.next({ columns: columnsCopy });
+        console.log('Board state updated with sorted data');
       }),
       catchError(error => {
         console.error('Failed to load board data:', error);
@@ -171,11 +182,8 @@ export class KanbanService {
     }).pipe(
       map(result => result.data.createColumn),
       tap((newColumn: Column) => {
-        const currentBoard = this.boardSubject.value;
-        this.boardSubject.next({
-          ...currentBoard,
-          columns: [...currentBoard.columns, { ...newColumn, cards: [] }]
-        });
+        // Refresh the board data from the server instead of manually updating
+        this.loadInitialData();
       }),
       catchError(this.handleError)
     );
@@ -188,19 +196,8 @@ export class KanbanService {
       fetchPolicy: 'no-cache'
     }).pipe(
       tap(() => {
-        const currentBoard = this.boardSubject.value;
-        const columns = currentBoard.columns.filter((col: Column) => col.id !== columnId);
-        
-        // Update positions after removing a column
-        const updatedColumns = [...columns].map((col: Column, index: number) => ({
-          ...col,
-          position: index
-        }));
-        
-        this.boardSubject.next({
-          ...currentBoard,
-          columns: updatedColumns
-        });
+        // Refresh the board data from the server instead of manually updating
+        this.loadInitialData();
       }),
       catchError(this.handleError)
     );
@@ -253,10 +250,8 @@ export class KanbanService {
           throw new Error(result.errors[0].message);
         }
         
-        // Update the board state with the new column positions
-        this.boardSubject.next({
-          columns: columns
-        });
+        // Refresh the board data from the server instead of manually updating
+        this.loadInitialData();
       }),
       catchError(error => {
         console.error('Error updating column positions:', error);
@@ -279,17 +274,8 @@ export class KanbanService {
     }).pipe(
       map(result => result.data.createCard),
       tap((newCard: Card) => {
-        const currentBoard = this.boardSubject.value;
-        const updatedColumns = currentBoard.columns.map((column: Column) => {
-          if (column.id === columnId) {
-            return {
-              ...column,
-              cards: [...column.cards, { ...newCard }]
-            };
-          }
-          return column;
-        });
-        this.boardSubject.next({ ...currentBoard, columns: updatedColumns });
+        // Refresh the board data from the server instead of manually updating
+        this.loadInitialData();
       }),
       catchError(this.handleError)
     );
@@ -302,17 +288,8 @@ export class KanbanService {
       fetchPolicy: 'no-cache'
     }).pipe(
       tap(() => {
-        const currentBoard = this.boardSubject.value;
-        const updatedColumns = currentBoard.columns.map((column: Column) => {
-          if (column.id === columnId) {
-            return {
-              ...column,
-              cards: column.cards.filter((card: Card) => card.id !== cardId)
-            };
-          }
-          return column;
-        });
-        this.boardSubject.next({ ...currentBoard, columns: updatedColumns });
+        // Refresh the board data from the server instead of manually updating
+        this.loadInitialData();
       }),
       catchError(this.handleError)
     );
@@ -333,9 +310,6 @@ export class KanbanService {
       return throwError(() => new Error('Card not found'));
     }
 
-    // Create a deep copy of the card to avoid mutation issues
-    const cardCopy = JSON.parse(JSON.stringify(card));
-
     return this.apollo.mutate<any>({
       mutation: MOVE_CARD,
       variables: {
@@ -349,46 +323,8 @@ export class KanbanService {
       fetchPolicy: 'no-cache'
     }).pipe(
       tap(() => {
-        // Create a deep copy of the current board state
-        const boardCopy = JSON.parse(JSON.stringify(currentBoard));
-        
-        // Remove the card from its original column
-        const updatedColumns = boardCopy.columns.map((column: Column) => {
-          if (column.id === fromColumn.id) {
-            return {
-              ...column,
-              cards: column.cards.filter((c: Card) => c.id !== cardId)
-            };
-          }
-          return column;
-        });
-        
-        // Add the card to its new column at the specified position
-        const toColumnIndex = updatedColumns.findIndex((col: Column) => col.id === toColumnId);
-        if (toColumnIndex !== -1) {
-          const toColumn = updatedColumns[toColumnIndex];
-          
-          // Create a new array of cards for the target column
-          const newCards = [...toColumn.cards];
-          
-          // Insert the card at the specified position
-          newCards.splice(position, 0, cardCopy);
-          
-          // Update the positions of all cards in the column
-          const sortedCards = newCards.map((card: Card, index: number) => ({
-            ...card,
-            position: index
-          }));
-          
-          // Update the column with the new cards array
-          updatedColumns[toColumnIndex] = {
-            ...toColumn,
-            cards: sortedCards
-          };
-        }
-        
-        // Update the board state
-        this.boardSubject.next({ columns: updatedColumns });
+        // Refresh the board data from the server instead of manually updating
+        this.loadInitialData();
       }),
       catchError(error => {
         console.error('Error moving card:', error);
@@ -414,16 +350,8 @@ export class KanbanService {
     }).pipe(
       map(result => result.data.updateCard),
       tap((updatedCard: Card) => {
-        const currentBoard = this.boardSubject.value;
-        const updatedColumns = currentBoard.columns.map((column: Column) => ({
-          ...column,
-          cards: column.cards.map((card: Card) => 
-            card.id === cardId 
-              ? { ...card, ...updatedCard }
-              : card
-          )
-        }));
-        this.boardSubject.next({ ...currentBoard, columns: updatedColumns });
+        // Refresh the board data from the server instead of manually updating
+        this.loadInitialData();
       }),
       catchError(this.handleError)
     );
@@ -450,19 +378,8 @@ export class KanbanService {
     }).pipe(
       map(result => {
         if (result.data?.updateColumn) {
-          // Atualizar o estado local
-          const board = { ...this.boardSubject.getValue() };
-          const columnIndex = board.columns.findIndex(col => col.id === columnId);
-          
-          if (columnIndex !== -1) {
-            board.columns[columnIndex] = {
-              ...board.columns[columnIndex],
-              title: data.title
-            };
-            
-            this.boardSubject.next(board);
-          }
-          
+          // Refresh the board data from the server instead of manually updating
+          this.loadInitialData();
           return result.data.updateColumn;
         }
         throw new Error('Failed to update column');
