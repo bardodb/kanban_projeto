@@ -173,25 +173,56 @@ export class BoardComponent implements OnInit {
   onColumnDrop(event: CdkDragDrop<Column[]>): void {
     if (event.previousIndex === event.currentIndex) return;
 
-    const columns = [...this.board.columns];
-    moveItemInArray(columns, event.previousIndex, event.currentIndex);
-    
-    // Update positions
-    columns.forEach((column, index) => {
-      column.position = index;
-    });
-
-    this.kanbanService.updateColumnPositions(columns).subscribe({
-      next: () => {
-        this.board = { ...this.board, columns };
-      },
-      error: (error: Error) => {
-        console.error('Error updating column positions:', error);
-        // Revert the change in case of error
-        moveItemInArray(columns, event.currentIndex, event.previousIndex);
-        this.board = { ...this.board, columns };
+    try {
+      // Create a deep copy of the columns array to avoid mutation issues
+      const columns = JSON.parse(JSON.stringify(this.board.columns));
+      
+      // Validate columns before proceeding
+      if (!columns || !Array.isArray(columns)) {
+        console.error('Invalid board columns:', columns);
+        return;
       }
-    });
+      
+      // Log before moving
+      console.log('Before moveItemInArray:', JSON.stringify(columns));
+      
+      moveItemInArray(columns, event.previousIndex, event.currentIndex);
+      
+      // Log after moving
+      console.log('After moveItemInArray:', JSON.stringify(columns));
+      
+      // Update positions
+      columns.forEach((column: Column, index: number) => {
+        if (column) {
+          column.position = index;
+        }
+      });
+      
+      // Log what we're sending to the service
+      console.log('Updating column positions with:', JSON.stringify(columns));
+      console.log('Column count:', columns.length);
+      
+      // Add a small delay to ensure all logs are processed
+      setTimeout(() => {
+        // Call the service with the updated columns
+        this.kanbanService.updateColumnPositions(columns).subscribe({
+          next: (result) => {
+            // Update the board with the new column order
+            console.log('Column positions updated successfully:', result);
+            this.board = { columns: columns };
+          },
+          error: (error: Error) => {
+            console.error('Error updating column positions:', error);
+            // Revert the change in case of error
+            const revertedColumns = JSON.parse(JSON.stringify(this.board.columns));
+            moveItemInArray(revertedColumns, event.currentIndex, event.previousIndex);
+            this.board = { columns: revertedColumns };
+          }
+        });
+      }, 100);
+    } catch (error) {
+      console.error('Error in onColumnDrop:', error);
+    }
   }
 
   onCardDrop(event: CdkDragDrop<Card[]>): void {
@@ -199,21 +230,18 @@ export class BoardComponent implements OnInit {
     const toColumnId = event.container.id;
     const newPosition = event.currentIndex;
 
+    // Save original state for potential rollback
+    const originalBoard = JSON.parse(JSON.stringify(this.board));
+
     // Sempre usar moveCard, mesmo quando na mesma coluna
     this.kanbanService.moveCard(cardId, toColumnId, newPosition).subscribe({
+      next: () => {
+        // The state is already updated in the service, no need to do anything here
+      },
       error: (error: Error) => {
         console.error('Error moving card:', error);
-        // Revert the change in case of error
-        if (event.previousContainer === event.container) {
-          moveItemInArray(event.container.data, event.currentIndex, event.previousIndex);
-        } else {
-          transferArrayItem(
-            event.container.data,
-            event.previousContainer.data,
-            event.currentIndex,
-            event.previousIndex
-          );
-        }
+        // Revert the change in case of error by restoring the original board state
+        this.board = originalBoard;
       }
     });
   }

@@ -279,20 +279,56 @@ export class KanbanService {
     }
   }
 
-  async updateColumnPositions(columns: Column[]): Promise<void> {
+  async updateColumnPositions(columns: { id: string; position: number }[]): Promise<void> {
+    // Validate input
+    if (!columns || !Array.isArray(columns)) {
+      console.error('Invalid columns data received:', columns);
+      throw new Error('Invalid columns data: columns must be an array');
+    }
+
+    if (columns.length === 0) {
+      console.log('Empty columns array received, nothing to update');
+      return; // Nothing to update
+    }
+
+    console.log('Updating column positions with:', JSON.stringify(columns));
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
       for (const column of columns) {
+        if (!column || typeof column !== 'object') {
+          throw new Error(`Invalid column data: ${JSON.stringify(column)}`);
+        }
+        
+        if (!column.id) {
+          throw new Error('Column id is required');
+        }
+        
+        if (typeof column.position !== 'number') {
+          throw new Error(`Invalid position value for column ${column.id}: ${column.position}`);
+        }
+        
+        const existingColumn = await queryRunner.manager.findOne(Column, {
+          where: { id: column.id },
+        });
+        
+        if (!existingColumn) {
+          console.warn(`Column with ID ${column.id} not found, skipping`);
+          continue;
+        }
+        
         await queryRunner.manager.update(Column, column.id, {
           position: column.position
         });
       }
 
       await queryRunner.commitTransaction();
+      console.log('Column positions updated successfully');
     } catch (error) {
+      console.error('Error in updateColumnPositions:', error);
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {

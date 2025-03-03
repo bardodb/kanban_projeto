@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { KanbanController } from './kanban.controller';
 import { KanbanService } from './kanban.service';
 import { Column } from './entities/column.entity';
 import { Card } from './entities/card.entity';
+import { KanbanResolver } from './kanban.resolver';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Column, Card])],
-  controllers: [KanbanController],
-  providers: [KanbanService],
+  controllers: [],
+  providers: [KanbanService, KanbanResolver],
 })
 export class KanbanModule {}
