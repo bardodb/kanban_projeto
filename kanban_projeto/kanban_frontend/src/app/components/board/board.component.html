@@ -5,9 +5,19 @@
       <div class="column-header">
         <h2>{{ column.title }}</h2>
         <div class="column-actions">
-          <button mat-icon-button (click)="onDeleteColumn(column.id, $event)">
+          <button mat-icon-button [matMenuTriggerFor]="columnMenu" class="column-menu-button">
             <mat-icon>more_horiz</mat-icon>
           </button>
+          <mat-menu #columnMenu="matMenu" class="column-options-menu">
+            <button mat-menu-item (click)="onEditColumn(column, $event)">
+              <mat-icon>edit</mat-icon>
+              <span>Edit column</span>
+            </button>
+            <button mat-menu-item class="delete-option" (click)="onDeleteColumn(column.id, $event)">
+              <mat-icon>delete_forever</mat-icon>
+              <span>Delete column</span>
+            </button>
+          </mat-menu>
         </div>
       </div>
 

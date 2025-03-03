@@ -6,10 +6,12 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import { MatMenuModule } from '@angular/material/menu';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AddColumnDialogComponent } from '../dialogs/add-column-dialog/add-column-dialog.component';
 import { AddCardDialogComponent } from '../dialogs/add-card-dialog/add-card-dialog.component';
 import { EditCardDialogComponent } from '../dialogs/edit-card-dialog/edit-card-dialog.component';
+import { EditColumnDialogComponent } from '../dialogs/edit-column-dialog/edit-column-dialog.component';
 import { Column } from '../../interfaces/column.interface';
 import { Card } from '../../interfaces/card.interface';
 
@@ -23,6 +25,7 @@ import { Card } from '../../interfaces/card.interface';
     MatButtonModule,
     MatIconModule,
     MatCardModule,
+    MatMenuModule,
     DragDropModule
   ]
 })
@@ -164,6 +167,39 @@ export class BoardComponent implements OnInit {
           },
           error: (error: Error) => {
             console.error('Error updating card:', error);
+          }
+        });
+      }
+    });
+  }
+
+  onEditColumn(column: Column, event: Event): void {
+    event.stopPropagation();
+    const dialogRef = this.dialog.open(EditColumnDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      data: { column },
+      autoFocus: true,
+      restoreFocus: true,
+      ariaLabel: 'Edit column',
+      role: 'dialog',
+      hasBackdrop: true,
+      closeOnNavigation: true,
+      disableClose: false,
+      ariaDescribedBy: 'edit-column-description'
+    });
+
+    dialogRef.afterClosed().subscribe((result?: { title: string }) => {
+      if (result) {
+        this.kanbanService.updateColumn(column.id, result).subscribe({
+          next: (updatedColumn: Column) => {
+            const columnIndex = this.board.columns.findIndex(c => c.id === column.id);
+            if (columnIndex !== -1) {
+              this.board.columns[columnIndex] = { ...this.board.columns[columnIndex], ...updatedColumn };
+            }
+          },
+          error: (error: Error) => {
+            console.error('Error updating column:', error);
           }
         });
       }

@@ -95,6 +95,15 @@ export class KanbanResolver {
     }
   }
 
+  @Mutation(() => Column)
+  async updateColumn(
+    @Args('id') id: string,
+    @Args('title') title: string
+  ): Promise<Column> {
+    console.log(`Updating column ${id} with title: ${title}`);
+    return this.kanbanService.updateColumnTitle(id, title);
+  }
+
   @Mutation(() => Card)
   async createCard(
     @Args('input') input: CreateCardInput,

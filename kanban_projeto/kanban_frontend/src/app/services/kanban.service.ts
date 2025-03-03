@@ -428,4 +428,49 @@ export class KanbanService {
       catchError(this.handleError)
     );
   }
+
+  updateColumn(columnId: string, data: { title: string }): Observable<Column> {
+    const UPDATE_COLUMN = gql`
+      mutation UpdateColumn($id: String!, $title: String!) {
+        updateColumn(id: $id, title: $title) {
+          id
+          title
+          position
+        }
+      }
+    `;
+
+    return this.apollo.mutate<{ updateColumn: Column }>({
+      mutation: UPDATE_COLUMN,
+      variables: {
+        id: columnId,
+        title: data.title
+      },
+      fetchPolicy: 'network-only'
+    }).pipe(
+      map(result => {
+        if (result.data?.updateColumn) {
+          // Atualizar o estado local
+          const board = { ...this.boardSubject.getValue() };
+          const columnIndex = board.columns.findIndex(col => col.id === columnId);
+          
+          if (columnIndex !== -1) {
+            board.columns[columnIndex] = {
+              ...board.columns[columnIndex],
+              title: data.title
+            };
+            
+            this.boardSubject.next(board);
+          }
+          
+          return result.data.updateColumn;
+        }
+        throw new Error('Failed to update column');
+      }),
+      catchError(error => {
+        console.error('Error updating column:', error);
+        return throwError(() => error);
+      })
+    );
+  }
 }

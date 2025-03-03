@@ -396,4 +396,29 @@ export class KanbanService {
       await queryRunner.release();
     }
   }
+
+  async updateColumnTitle(id: string, title: string): Promise<Column> {
+    try {
+      if (!id) {
+        throw new Error('Column ID is required');
+      }
+      
+      if (!title || title.trim() === '') {
+        throw new Error('Column title is required');
+      }
+      
+      const column = await this.columnRepository.findOne({ where: { id } });
+      
+      if (!column) {
+        throw new Error(`Column with ID ${id} not found`);
+      }
+      
+      column.title = title;
+      
+      return this.columnRepository.save(column);
+    } catch (error) {
+      console.error('Error updating column title:', error);
+      throw error;
+    }
+  }
 }

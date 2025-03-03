@@ -90,3 +90,36 @@ html, body {
 .mat-mdc-form-field-focus-overlay {
   background-color: rgba(255, 255, 255, 0.04);
 }
+
+// Estilos para o menu de opções da coluna
+.column-options-menu {
+  .mat-mdc-menu-content {
+    padding: 0 !important;
+  }
+  
+  .mat-mdc-menu-item {
+    font-size: 14px;
+    line-height: 40px;
+    height: 40px;
+    
+    .mat-icon {
+      margin-right: 8px;
+    }
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  }
+  
+  .delete-option {
+    color: #FF5630;
+    
+    &:hover {
+      background-color: rgba(255, 86, 48, 0.1);
+    }
+    
+    .mat-icon {
+      color: #FF5630;
+    }
+  }
+}
